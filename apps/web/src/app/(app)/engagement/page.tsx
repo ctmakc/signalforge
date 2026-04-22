@@ -1,182 +1,160 @@
 import { PageShell } from '@/components/layout/page-shell'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { PlatformIcon } from '@/components/ui/platform-icon'
-import { ScoreRing } from '@/components/ui/score-ring'
-import { mockSignals } from '@/lib/mock-data'
-import { timeAgo } from '@/lib/utils'
-import { RefreshCw, Send, ThumbsUp, ThumbsDown, AlertCircle } from 'lucide-react'
 
-const activeSignal = mockSignals[0]
-
-const suggestedReplies = [
+const aiDrafts = [
   {
-    id: 'r1',
-    tone: 'Value-first',
-    text: "We've been working exactly on this problem. SignalForge lets you run controlled, reputation-aware outreach across Reddit + X without triggering bans — warmup baked in, action rate-limited per account. Happy to show you how it works if you're exploring options.",
-    risk: 'low',
+    id: 1,
+    selected: true,
+    text: "Sarah, completely agree on the burn-rate of generic templates. We moved to a signal-based flow last quarter. The key was decoupling the 'intent detection' from the 'sending' platform, letting the CRM act solely as the system of record. Happy to share the specific stack we used if it's helpful.",
   },
   {
-    id: 'r2',
-    tone: 'Conversational',
-    text: "What specifically kept getting you banned? Was it post frequency, account age, or the reply patterns? Asking because different root causes need different solutions — some of what I've seen work is warming accounts before any outreach and keeping reply-to-original-post ratios natural.",
-    risk: 'low',
-  },
-  {
-    id: 'r3',
-    tone: 'Direct pitch',
-    text: "Check out SignalForge — it was literally built for this. Multi-account Reddit+X outreach with warmup engine, proxy assignment, and daily action controls. We're in early access. DM me if you want in.",
-    risk: 'medium',
+    id: 2,
+    selected: false,
+    text: "Spot on, Sarah. The bridge is usually the hardest part. Rather than ripping out existing CRM workflows, we found success routing intent signals into dedicated 'high-priority' queues for reps, accompanied by AI-generated contextual briefs. Keeps the workflow familiar but drastically improves the outreach quality.",
   },
 ]
 
 export default function EngagementPage() {
   return (
-    <PageShell title="Engagement Composer" subtitle="Draft and approve public thread replies">
-      <div className="grid grid-cols-2 gap-4 h-[calc(100vh-8rem)]">
-        {/* Left: Source content */}
-        <div className="flex flex-col gap-3 overflow-hidden">
-          <Card className="flex-shrink-0">
-            <CardHeader>
-              <CardTitle>Source Post</CardTitle>
-              <div className="flex items-center gap-2">
-                <PlatformIcon platform={activeSignal.platform} size="sm" />
-                <span className="text-xs text-zinc-500">{activeSignal.source}</span>
+    <PageShell
+      title="Engagement Composer"
+      subtitle="High-Intent Signal Detected"
+      subtitleIcon="radar"
+      headerActions={
+        <button className="px-4 py-2 rounded border border-[color:var(--color-outline)] bg-[color:var(--color-surface)] text-[color:var(--color-on-surface)] text-label-md hover:bg-[color:var(--color-surface-container-low)] transition-colors flex items-center gap-2">
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>skip_next</span>
+          Skip Signal
+        </button>
+      }
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" style={{ height: 'calc(100vh - 180px)', minHeight: 600 }}>
+        {/* Left Pane: Target Thread */}
+        <section className="lg:col-span-5 bg-[color:var(--color-surface-container-lowest)] border border-[color:var(--color-outline-variant)] rounded-xl flex flex-col overflow-hidden shadow-sm">
+          <div className="px-6 py-3 border-b border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)]/50 flex justify-between items-center">
+            <h3 className="text-[color:var(--color-on-surface)] font-semibold" style={{ fontSize: 16 }}>Target Thread</h3>
+            <span className="px-2 py-1 bg-[color:var(--color-tertiary-fixed)] text-[color:var(--color-on-tertiary-fixed)] rounded text-label-md uppercase tracking-wider font-bold" style={{ fontSize: 10 }}>Buying Intent</span>
+          </div>
+          <div className="p-6 flex-1 overflow-y-auto">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-[color:var(--color-surface-container-high)] flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-[color:var(--color-outline)]">person</span>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-3">
-                <ScoreRing score={activeSignal.intentScore} />
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-zinc-900 mb-1">
-                    {activeSignal.authorName}
-                    <span className="ml-2 font-normal text-zinc-400">
-                      {timeAgo(activeSignal.postedAt)}
-                    </span>
-                  </p>
-                  {activeSignal.title && (
-                    <p className="text-sm font-medium text-zinc-800 mb-1">{activeSignal.title}</p>
-                  )}
-                  <p className="text-sm text-zinc-600">{activeSignal.bodyText}</p>
+              <div>
+                <div className="text-body-lg text-[color:var(--color-on-surface)] font-semibold flex items-center gap-1">
+                  Sarah Jenkins
+                  <span className="material-symbols-outlined text-[color:var(--color-primary)]" style={{ fontSize: 14, fontVariationSettings: "'FILL' 1" }}>verified</span>
                 </div>
+                <div className="text-body-md text-[color:var(--color-on-surface-variant)]" style={{ fontSize: 13 }}>VP of Engineering @ CloudScale</div>
+                <div className="text-label-md text-[color:var(--color-outline)] mt-0.5">2 hours ago • LinkedIn</div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="flex-1 overflow-hidden">
-            <CardHeader>
-              <CardTitle>AI Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="rounded bg-violet-50 border border-violet-100 p-3">
-                  <p className="text-xs font-medium text-violet-700 mb-1">Summary</p>
-                  <p className="text-xs text-violet-800">{activeSignal.aiSummary}</p>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { label: 'Intent', value: activeSignal.intentScore },
-                    { label: 'Urgency', value: activeSignal.urgencyScore },
-                    { label: 'Fit', value: activeSignal.fitScore },
-                  ].map((m) => (
-                    <div key={m.label} className="rounded border border-zinc-100 p-2 text-center">
-                      <p className="text-[10px] text-zinc-400">{m.label}</p>
-                      <ScoreRing score={m.value} size="sm" className="mx-auto mt-1" />
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-zinc-500 mb-1">Detected need</p>
-                  <p className="text-xs text-zinc-800">{activeSignal.extractedNeed}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-zinc-500 mb-1">Recommended action</p>
-                  <p className="text-xs text-zinc-800">{activeSignal.recommendedAction}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <div className="text-body-md text-[color:var(--color-on-surface)] leading-relaxed space-y-3">
+              <p>We&apos;re currently re-evaluating our entire outbound motion. The generic templated cadences just aren&apos;t cutting it anymore — our reps are burning through high-quality leads with zero personalization.</p>
+              <p>Has anyone successfully transitioned their team to a more signal-based approach without completely breaking their existing CRM workflows? Looking for recommendations on tooling that actually bridges the gap between intent data and personalized execution.</p>
+              <p className="text-[color:var(--color-primary)] cursor-pointer hover:underline">#SalesTech #GTM #RevOps</p>
+            </div>
 
-        {/* Right: Reply composer */}
-        <div className="flex flex-col gap-3 overflow-hidden">
-          <Card className="flex-shrink-0">
-            <CardHeader>
-              <CardTitle>Reply Variants</CardTitle>
-              <Button variant="ghost" size="sm">
-                <RefreshCw className="h-3.5 w-3.5" />
-                Regenerate
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {suggestedReplies.map((r) => (
-                <div key={r.id} className="rounded border border-zinc-200 p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="default">{r.tone}</Badge>
-                    <Badge variant={r.risk === 'low' ? 'success' : 'warning'}>
-                      {r.risk} risk
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-zinc-700 leading-relaxed">{r.text}</p>
-                  <div className="mt-2 flex gap-1">
-                    <Button variant="ghost" size="sm" className="px-1.5">
-                      <ThumbsUp className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="px-1.5">
-                      <ThumbsDown className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button variant="outline" size="sm" className="ml-auto">
-                      Use this
-                    </Button>
-                  </div>
+            <div className="mt-6 pt-4 border-t border-[color:var(--color-outline-variant)] flex gap-6 text-[color:var(--color-on-surface-variant)]">
+              {[{ icon: 'thumb_up', value: 142 }, { icon: 'chat_bubble', value: 38 }, { icon: 'share', value: 12 }].map((m) => (
+                <div key={m.icon} className="flex items-center gap-1.5 text-label-md" style={{ fontSize: 13 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{m.icon}</span>
+                  {m.value}
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </section>
 
-          <Card className="flex-1 flex flex-col">
-            <CardHeader>
-              <CardTitle>Final Reply</CardTitle>
-              <div className="flex items-center gap-1 text-xs text-amber-600">
-                <AlertCircle className="h-3 w-3" />
-                Requires approval
-              </div>
-            </CardHeader>
-            <CardContent className="flex flex-1 flex-col gap-3">
-              <textarea
-                className="flex-1 resize-none rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-800 focus:border-zinc-400 focus:outline-none focus:bg-white"
-                defaultValue={suggestedReplies[0].text}
-                rows={6}
-              />
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1">
-                  {['Professional', 'Casual', 'Direct'].map((t) => (
-                    <button
-                      key={t}
-                      className={`rounded px-2 py-1 text-xs ${
-                        t === 'Value-first'
-                          ? 'bg-zinc-900 text-white'
-                          : 'border border-zinc-200 text-zinc-500 hover:bg-zinc-50'
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
+        {/* Right Pane: Composer */}
+        <section className="lg:col-span-7 bg-[color:var(--color-surface-container-lowest)] border border-[color:var(--color-outline-variant)] rounded-xl flex flex-col shadow-sm overflow-hidden">
+          {/* AI Toolbar */}
+          <div className="px-6 py-2 border-b border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[color:var(--color-tertiary)]" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+              <span className="text-label-md font-semibold text-[color:var(--color-on-surface)]">AI Drafts</span>
+            </div>
+            <div className="flex bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] rounded p-0.5">
+              {['Helpful', 'Expert', 'Casual'].map((tone, i) => (
+                <button
+                  key={tone}
+                  className={`px-3 py-1.5 rounded-sm text-label-md font-medium transition-colors ${
+                    i === 0
+                      ? 'bg-[color:var(--color-primary-container)] text-[color:var(--color-on-primary-container)] shadow-sm'
+                      : 'text-[color:var(--color-on-surface-variant)] hover:text-[color:var(--color-on-surface)]'
+                  }`}
+                  style={{ fontSize: 11 }}
+                >
+                  {tone}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* AI Suggestions */}
+          <div className="p-4 border-b border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-bright)] space-y-2">
+            {aiDrafts.map((draft) => (
+              <div
+                key={draft.id}
+                className={`p-4 rounded border cursor-pointer relative group ${
+                  draft.selected
+                    ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary-fixed)]/20'
+                    : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] hover:border-[color:var(--color-outline)] transition-colors'
+                }`}
+              >
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button className="p-1 rounded bg-[color:var(--color-surface)] border border-[color:var(--color-outline-variant)] text-[color:var(--color-on-surface-variant)] hover:text-[color:var(--color-primary)]">
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>content_copy</span>
+                  </button>
                 </div>
-                <div className="ml-auto flex gap-2">
-                  <Button variant="outline" size="sm">
-                    Skip
-                  </Button>
-                  <Button variant="success" size="sm">
-                    <Send className="h-3.5 w-3.5" />
-                    Approve & Send
-                  </Button>
-                </div>
+                <p
+                  className={`text-body-md leading-snug transition-colors ${
+                    draft.selected
+                      ? 'text-[color:var(--color-on-surface)]'
+                      : 'text-[color:var(--color-on-surface-variant)] group-hover:text-[color:var(--color-on-surface)]'
+                  }`}
+                  style={{ fontSize: 13 }}
+                >
+                  {draft.text}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            ))}
+          </div>
+
+          {/* Editor */}
+          <div className="flex-1 flex flex-col p-6 min-h-0">
+            <textarea
+              className="w-full flex-1 resize-none bg-transparent border-none focus:ring-0 text-body-md text-[color:var(--color-on-surface)] placeholder:text-[color:var(--color-outline-variant)] outline-none"
+              placeholder="Refine your reply here..."
+            />
+            <div className="flex items-center gap-1 mt-4 pt-3 border-t border-[color:var(--color-surface-container-high)] text-[color:var(--color-on-surface-variant)]">
+              {['format_bold', 'format_italic', 'link', 'format_list_bulleted'].map((icon) => (
+                <button key={icon} className="p-1.5 rounded hover:bg-[color:var(--color-surface-container)] transition-colors">
+                  <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{icon}</span>
+                </button>
+              ))}
+              <div className="h-4 w-px bg-[color:var(--color-outline-variant)] mx-2" />
+              <button className="p-1.5 rounded hover:bg-[color:var(--color-surface-container)] transition-colors flex items-center gap-1 text-label-md" style={{ fontSize: 11 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>attach_file</span>
+                Attach
+              </button>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-3 border-t border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-lowest)] flex justify-between items-center rounded-b-xl">
+            <div className="flex items-center gap-2 text-[color:var(--color-outline)] text-label-md" style={{ fontSize: 12 }}>
+              <span className="material-symbols-outlined text-[color:var(--color-secondary)]" style={{ fontSize: 16 }}>check_circle</span>
+              Saved to drafts
+            </div>
+            <button
+              className="px-6 py-2 rounded bg-[color:var(--color-primary)] text-[color:var(--color-on-primary)] text-label-md font-semibold hover:opacity-90 transition-opacity shadow-sm flex items-center gap-2"
+              style={{ fontSize: 13 }}
+            >
+              Send to thread
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>send</span>
+            </button>
+          </div>
+        </section>
       </div>
     </PageShell>
   )

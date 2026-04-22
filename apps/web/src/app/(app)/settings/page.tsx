@@ -1,146 +1,153 @@
 import { PageShell } from '@/components/layout/page-shell'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { mockWorkspace, mockUser } from '@/lib/mock-data'
-import { Shield, Bell, CreditCard, Users, Plug, FileText } from 'lucide-react'
 
-const sections = [
-  { label: 'Workspace', icon: Shield, active: true },
-  { label: 'Team Members', icon: Users },
-  { label: 'Integrations', icon: Plug },
-  { label: 'Notifications', icon: Bell },
-  { label: 'Billing', icon: CreditCard },
-  { label: 'Audit Logs', icon: FileText },
+const navSections = [
+  { label: 'Workspace', icon: 'domain', active: true },
+  { label: 'Team Members', icon: 'group' },
+  { label: 'Integrations', icon: 'electrical_services' },
+  { label: 'Notifications', icon: 'notifications' },
+  { label: 'Billing', icon: 'credit_card' },
+  { label: 'Audit Logs', icon: 'history' },
+]
+
+const workspaceFields = [
+  { label: 'Workspace name', value: 'Acme Outreach', readOnly: false },
+  { label: 'Slug', value: 'acme-outreach', readOnly: false },
+  { label: 'Workspace ID', value: 'ws_01hy4x8q1f2n3p', readOnly: true },
+  { label: 'Plan', value: 'Growth', readOnly: true },
+]
+
+const profileFields = [
+  { label: 'Full name', value: 'Alex Martinez', readOnly: false },
+  { label: 'Email', value: 'alex@acme.com', readOnly: false },
+  { label: 'Timezone', value: 'America/New_York', readOnly: false },
+  { label: 'Role', value: 'Owner', readOnly: true },
+]
+
+const riskFields = [
+  { label: 'Max daily replies per account', value: '10' },
+  { label: 'Max DMs per account per day', value: '5' },
+  { label: 'Cooldown between replies (min)', value: '30' },
+  { label: 'Similarity detection threshold (%)', value: '80' },
 ]
 
 export default function SettingsPage() {
   return (
-    <PageShell title="Settings" subtitle="Workspace and account configuration">
-      <div className="flex gap-4">
+    <PageShell title="Settings" subtitle="Workspace and account configuration.">
+      <div className="flex gap-6">
         {/* Sidebar nav */}
-        <div className="w-44 flex-shrink-0">
-          <nav className="flex flex-col gap-0.5">
-            {sections.map((s) => {
-              const Icon = s.icon
-              return (
-                <button
-                  key={s.label}
-                  className={`flex items-center gap-2 rounded px-3 py-2 text-sm ${
-                    s.active
-                      ? 'bg-zinc-100 text-zinc-900 font-medium'
-                      : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
-                  }`}
-                >
-                  <Icon className="h-4 w-4 flex-shrink-0" />
-                  {s.label}
-                </button>
-              )
-            })}
-          </nav>
-        </div>
+        <nav className="w-48 flex-shrink-0 space-y-0.5">
+          {navSections.map((s) => (
+            <button
+              key={s.label}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-label-md transition-colors ${
+                s.active
+                  ? 'bg-[color:var(--color-primary-fixed)]/20 text-[color:var(--color-primary)] font-medium'
+                  : 'text-[color:var(--color-on-surface-variant)] hover:bg-[color:var(--color-surface-container-low)] hover:text-[color:var(--color-on-surface)]'
+              }`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{s.icon}</span>
+              {s.label}
+            </button>
+          ))}
+        </nav>
 
         {/* Content */}
-        <div className="flex-1 flex flex-col gap-4">
+        <div className="flex-1 space-y-6">
           {/* Workspace */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Workspace</CardTitle>
-              <Badge variant="info">{mockWorkspace.plan} plan</Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { label: 'Workspace name', value: mockWorkspace.name },
-                  { label: 'Slug', value: mockWorkspace.slug },
-                  { label: 'Workspace ID', value: mockWorkspace.id },
-                  { label: 'Plan', value: mockWorkspace.plan },
-                ].map((f) => (
+          <div className="bg-[color:var(--color-surface-container-lowest)] border border-[color:var(--color-outline-variant)] rounded-xl overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-[color:var(--color-surface-container-high)] flex items-center justify-between">
+              <h3 className="text-h2 text-[color:var(--color-on-background)]">Workspace</h3>
+              <span className="px-2 py-0.5 bg-[color:var(--color-tertiary-fixed)] text-[color:var(--color-on-tertiary-fixed)] text-label-md rounded-full">Growth Plan</span>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {workspaceFields.map((f) => (
                   <div key={f.label}>
-                    <label className="block text-xs font-medium text-zinc-500 mb-1">
-                      {f.label}
-                    </label>
+                    <label className="block text-label-md text-[color:var(--color-on-surface-variant)] mb-1.5">{f.label}</label>
                     <input
-                      className="w-full rounded border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-800 focus:border-zinc-400 focus:outline-none focus:bg-white"
+                      className={`w-full rounded-lg border px-3 py-2 text-body-md text-[color:var(--color-on-surface)] outline-none transition-colors ${
+                        f.readOnly
+                          ? 'bg-[color:var(--color-surface-container-low)] border-[color:var(--color-outline-variant)] text-[color:var(--color-on-surface-variant)] cursor-not-allowed'
+                          : 'bg-[color:var(--color-surface)] border-[color:var(--color-outline-variant)] focus:border-[color:var(--color-primary)] focus:ring-2 focus:ring-[color:var(--color-primary)]/20'
+                      }`}
                       defaultValue={f.value}
-                      readOnly={f.label === 'Workspace ID' || f.label === 'Plan'}
+                      readOnly={f.readOnly}
                     />
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex justify-end">
-                <Button size="sm">Save changes</Button>
+              <div className="flex justify-end">
+                <button className="px-5 py-2 bg-[color:var(--color-primary)] text-[color:var(--color-on-primary)] text-label-md rounded hover:opacity-90 transition-opacity shadow-sm">
+                  Save changes
+                </button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Your profile */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Profile</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-200 text-lg font-semibold text-zinc-700">
-                  {mockUser.name[0]}
+          {/* Profile */}
+          <div className="bg-[color:var(--color-surface-container-lowest)] border border-[color:var(--color-outline-variant)] rounded-xl overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-[color:var(--color-surface-container-high)]">
+              <h3 className="text-h2 text-[color:var(--color-on-background)]">Your Profile</h3>
+            </div>
+            <div className="p-6">
+              <div className="flex items-start gap-5 mb-5">
+                <div className="w-14 h-14 rounded-full bg-[color:var(--color-primary-fixed)] flex items-center justify-center text-[color:var(--color-primary)] font-bold text-xl flex-shrink-0">
+                  A
                 </div>
                 <div className="flex-1 grid grid-cols-2 gap-4">
-                  {[
-                    { label: 'Full name', value: mockUser.name },
-                    { label: 'Email', value: mockUser.email },
-                    { label: 'Timezone', value: 'America/Toronto' },
-                    { label: 'Role', value: mockUser.role },
-                  ].map((f) => (
+                  {profileFields.map((f) => (
                     <div key={f.label}>
-                      <label className="block text-xs font-medium text-zinc-500 mb-1">
-                        {f.label}
-                      </label>
+                      <label className="block text-label-md text-[color:var(--color-on-surface-variant)] mb-1.5">{f.label}</label>
                       <input
-                        className="w-full rounded border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-800 focus:border-zinc-400 focus:outline-none focus:bg-white"
+                        className={`w-full rounded-lg border px-3 py-2 text-body-md text-[color:var(--color-on-surface)] outline-none transition-colors ${
+                          f.readOnly
+                            ? 'bg-[color:var(--color-surface-container-low)] border-[color:var(--color-outline-variant)] text-[color:var(--color-on-surface-variant)] cursor-not-allowed'
+                            : 'bg-[color:var(--color-surface)] border-[color:var(--color-outline-variant)] focus:border-[color:var(--color-primary)] focus:ring-2 focus:ring-[color:var(--color-primary)]/20'
+                        }`}
                         defaultValue={f.value}
-                        readOnly={f.label === 'Role'}
+                        readOnly={f.readOnly}
                       />
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="mt-4 flex justify-end">
-                <Button size="sm">Update profile</Button>
+              <div className="flex justify-end">
+                <button className="px-5 py-2 bg-[color:var(--color-primary)] text-[color:var(--color-on-primary)] text-label-md rounded hover:opacity-90 transition-opacity shadow-sm">
+                  Update profile
+                </button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Integrations placeholder */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Risk Controls</CardTitle>
-              <Badge variant="warning">Review recommended</Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { label: 'Max daily replies per account', value: '10' },
-                  { label: 'Max DMs per account per day', value: '5' },
-                  { label: 'Cooldown between replies (min)', value: '30' },
-                  { label: 'Similarity detection threshold (%)', value: '80' },
-                ].map((f) => (
+          {/* Risk Controls */}
+          <div className="bg-[color:var(--color-surface-container-lowest)] border border-[color:var(--color-outline-variant)] rounded-xl overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-[color:var(--color-surface-container-high)] flex items-center justify-between">
+              <h3 className="text-h2 text-[color:var(--color-on-background)]">Risk Controls</h3>
+              <span className="flex items-center gap-1 text-label-md text-[color:var(--color-error)]">
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>warning</span>
+                Review recommended
+              </span>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {riskFields.map((f) => (
                   <div key={f.label}>
-                    <label className="block text-xs font-medium text-zinc-500 mb-1">
-                      {f.label}
-                    </label>
+                    <label className="block text-label-md text-[color:var(--color-on-surface-variant)] mb-1.5">{f.label}</label>
                     <input
-                      className="w-full rounded border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-800 focus:border-zinc-400 focus:outline-none focus:bg-white"
-                      defaultValue={f.value}
                       type="number"
+                      className="w-full rounded-lg border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface)] px-3 py-2 text-body-md text-[color:var(--color-on-surface)] outline-none focus:border-[color:var(--color-primary)] focus:ring-2 focus:ring-[color:var(--color-primary)]/20 transition-colors"
+                      defaultValue={f.value}
                     />
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex justify-end">
-                <Button size="sm">Save risk controls</Button>
+              <div className="flex justify-end">
+                <button className="px-5 py-2 bg-[color:var(--color-primary)] text-[color:var(--color-on-primary)] text-label-md rounded hover:opacity-90 transition-opacity shadow-sm">
+                  Save risk controls
+                </button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </PageShell>
