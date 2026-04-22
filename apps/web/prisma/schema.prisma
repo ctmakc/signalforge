@@ -1,0 +1,433 @@
+// SignalForge — complete data model
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Workspace & Users ────────────────────────────────────────────────────────
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      String   @default("free")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users              WorkspaceMember[]
+  accounts           ConnectedAccount[]
+  sources            Source[]
+  signals            Signal[]
+  leads              Lead[]
+  campaigns          Campaign[]
+  automationPolicies AutomationPolicy[]
+  activityLogs       ActivityLog[]
+  proxyProfiles      ProxyProfile[]
+  warmupPlans        WarmupPlan[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String?
+  avatarUrl String?
+  timezone  String   @default("UTC")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspaces      WorkspaceMember[]
+  ownedLeads      Lead[]             @relation("LeadOwner")
+  approvedReplies ThreadEngagement[]
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        Role     @default(OPERATOR)
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  OPERATOR
+  ANALYST
+}
+
+// ─── Platform Accounts ────────────────────────────────────────────────────────
+
+model ConnectedAccount {
+  id                String        @id @default(cuid())
+  workspaceId       String
+  platform          Platform
+  displayName       String
+  username          String
+  externalAccountId String?
+  authType          String
+  authStatus        AccountStatus @default(PENDING)
+  warmupStatus      WarmupStatus  @default(IDLE)
+  healthStatus      HealthStatus  @default(UNKNOWN)
+  reputationScore   Int           @default(0)
+  riskScore         Int           @default(0)
+  dailyActionLimit  Int           @default(20)
+  assignedProxyId   String?
+  metadata          Json?
+  lastSeenAt        DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  proxy           ProxyProfile?    @relation(fields: [assignedProxyId], references: [id])
+  warmupPlans     WarmupPlan[]
+  engagements     ThreadEngagement[]
+  dmConversations DmConversation[]
+  warmupActions   WarmupAction[]
+}
+
+enum Platform {
+  TELEGRAM
+  REDDIT
+  X
+  FACEBOOK
+  LINKEDIN
+}
+
+enum AccountStatus {
+  PENDING
+  CONNECTED
+  DISCONNECTED
+  ERROR
+}
+
+enum WarmupStatus {
+  IDLE
+  WARMING
+  READY
+  PAUSED
+  SUSPENDED
+}
+
+enum HealthStatus {
+  UNKNOWN
+  HEALTHY
+  AT_RISK
+  LIMITED
+  BANNED
+}
+
+model ProxyProfile {
+  id                String   @id @default(cuid())
+  workspaceId       String
+  label             String
+  type              String
+  host              String
+  port              Int
+  username          String?
+  passwordEncrypted String?
+  country           String?
+  city              String?
+  status            String   @default("active")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  workspace Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  accounts  ConnectedAccount[]
+}
+
+// ─── Sources ──────────────────────────────────────────────────────────────────
+
+model Source {
+  id               String   @id @default(cuid())
+  workspaceId      String
+  platform         Platform
+  sourceType       String
+  name             String
+  externalSourceId String?
+  url              String?
+  joinStatus       String   @default("pending")
+  priority         Int      @default(5)
+  tags             String[]
+  monitoringMode   String   @default("passive")
+  ingestionStatus  String   @default("idle")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  rules        SourceRule[]
+  contentItems ContentItem[]
+}
+
+model SourceRule {
+  id       String  @id @default(cuid())
+  sourceId String
+  ruleType String
+  operator String  @default("contains")
+  value    String
+  weight   Float   @default(1.0)
+  isActive Boolean @default(true)
+
+  source Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+}
+
+// ─── Content & Signals ────────────────────────────────────────────────────────
+
+model ContentItem {
+  id                String    @id @default(cuid())
+  workspaceId       String
+  sourceId          String
+  platform          Platform
+  externalContentId String?
+  contentType       String
+  authorName        String?
+  authorHandle      String?
+  authorMeta        Json?
+  title             String?
+  bodyText          String
+  permalink         String?
+  postedAt          DateTime?
+  ingestedAt        DateTime  @default(now())
+  language          String?
+  metadata          Json?
+
+  source  Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  signals Signal[]
+}
+
+model Signal {
+  id                String       @id @default(cuid())
+  workspaceId       String
+  contentItemId     String
+  signalType        String       @default("intent")
+  intentScore       Int          @default(0)
+  urgencyScore      Int          @default(0)
+  fitScore          Int          @default(0)
+  spamProbability   Float        @default(0)
+  sentiment         String?
+  extractedKeywords String[]
+  extractedNeed     String?
+  aiSummary         String?
+  recommendedAction String?
+  status            SignalStatus @default(NEW)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contentItem ContentItem        @relation(fields: [contentItemId], references: [id])
+  engagements ThreadEngagement[]
+  leads       Lead[]
+}
+
+enum SignalStatus {
+  NEW
+  REVIEWED
+  ENGAGED
+  DISMISSED
+  CONVERTED
+}
+
+// ─── Leads ────────────────────────────────────────────────────────────────────
+
+model Lead {
+  id                String        @id @default(cuid())
+  workspaceId       String
+  platform          Platform
+  sourceSignalId    String?
+  displayName       String
+  handle            String?
+  contactChannel    String?
+  leadStatus        String        @default("new")
+  pipelineStage     PipelineStage @default(NEW)
+  ownerUserId       String?
+  temperature       String        @default("cold")
+  estimatedValue    Float?
+  tags              String[]
+  notes             String?
+  lastInteractionAt DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sourceSignal    Signal?          @relation(fields: [sourceSignalId], references: [id])
+  owner           User?            @relation("LeadOwner", fields: [ownerUserId], references: [id])
+  dmConversations DmConversation[]
+}
+
+enum PipelineStage {
+  NEW
+  CONTACTED
+  REPLIED
+  QUALIFIED
+  NEGOTIATION
+  WON
+  LOST
+}
+
+// ─── Engagement ───────────────────────────────────────────────────────────────
+
+model ThreadEngagement {
+  id           String           @id @default(cuid())
+  workspaceId  String
+  signalId     String
+  accountId    String
+  platform     Platform
+  replyText    String
+  replyVersion Int              @default(1)
+  tone         String?
+  actionStatus EngagementStatus @default(DRAFT)
+  sentAt       DateTime?
+  operatorId   String?
+  aiGenerated  Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  signal   Signal           @relation(fields: [signalId], references: [id])
+  account  ConnectedAccount @relation(fields: [accountId], references: [id])
+  operator User?            @relation(fields: [operatorId], references: [id])
+}
+
+enum EngagementStatus {
+  DRAFT
+  APPROVED
+  SENT
+  FAILED
+  SKIPPED
+}
+
+// ─── DM Conversations ─────────────────────────────────────────────────────────
+
+model DmConversation {
+  id                 String             @id @default(cuid())
+  workspaceId        String
+  leadId             String
+  accountId          String
+  platform           Platform
+  conversationStatus ConversationStatus @default(ACTIVE)
+  lastMessageAt      DateTime?
+  unreadCount        Int                @default(0)
+  summary            String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  lead     Lead             @relation(fields: [leadId], references: [id])
+  account  ConnectedAccount @relation(fields: [accountId], references: [id])
+  messages DmMessage[]
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  CLOSED
+}
+
+model DmMessage {
+  id                String   @id @default(cuid())
+  conversationId    String
+  direction         String
+  senderType        String
+  bodyText          String
+  messageType       String   @default("text")
+  deliveryStatus    String   @default("sent")
+  externalMessageId String?
+  sentAt            DateTime @default(now())
+  createdAt         DateTime @default(now())
+
+  conversation DmConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+// ─── Warmup ───────────────────────────────────────────────────────────────────
+
+model WarmupPlan {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  accountId    String
+  status       String   @default("active")
+  dailyTargets Json?
+  schedule     Json?
+  tonePreset   String?
+  sourceScope  Json?
+  delayProfile Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  account   ConnectedAccount @relation(fields: [accountId], references: [id])
+  actions   WarmupAction[]
+}
+
+model WarmupAction {
+  id           String    @id @default(cuid())
+  warmupPlanId String
+  accountId    String
+  platform     Platform
+  actionType   String
+  targetRef    String?
+  actionStatus String    @default("pending")
+  scheduledAt  DateTime?
+  executedAt   DateTime?
+  resultMeta   Json?
+
+  warmupPlan WarmupPlan       @relation(fields: [warmupPlanId], references: [id], onDelete: Cascade)
+  account    ConnectedAccount @relation(fields: [accountId], references: [id])
+}
+
+// ─── Automation ───────────────────────────────────────────────────────────────
+
+model AutomationPolicy {
+  id                          String   @id @default(cuid())
+  workspaceId                 String   @unique
+  mode                        String   @default("manual")
+  publicReplyApprovalRequired Boolean  @default(true)
+  dmApprovalRequired          Boolean  @default(true)
+  riskTolerance               String   @default("low")
+  quietHours                  Json?
+  rateLimits                  Json?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+// ─── Campaigns ────────────────────────────────────────────────────────────────
+
+model Campaign {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  niche       String?
+  offerType   String?
+  status      String   @default("active")
+  toneProfile String?
+  sourceSet   Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+// ─── Activity Logs ────────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  actorType   String
+  entityType  String
+  actorId     String?
+  entityId    String?
+  action      String
+  details     Json?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
