@@ -5,8 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
 }
 
 // ─── Workspace & Users ────────────────────────────────────────────────────────
@@ -32,25 +31,28 @@ model Workspace {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String?
-  avatarUrl String?
-  timezone  String   @default("UTC")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  avatarUrl     String?
+  timezone      String   @default("UTC")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   workspaces      WorkspaceMember[]
   ownedLeads      Lead[]             @relation("LeadOwner")
   approvedReplies ThreadEngagement[]
+  sessions        Session[]
+  authAccounts    Account[]
 }
 
 model WorkspaceMember {
   id          String   @id @default(cuid())
   workspaceId String
   userId      String
-  role        Role     @default(OPERATOR)
+  role        String   @default("OPERATOR")
   createdAt   DateTime @default(now())
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -59,34 +61,75 @@ model WorkspaceMember {
   @@unique([workspaceId, userId])
 }
 
-enum Role {
-  OWNER
-  ADMIN
-  OPERATOR
-  ANALYST
+// ─── better-auth tables ───────────────────────────────────────────────────────
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@unique([identifier, value])
 }
 
 // ─── Platform Accounts ────────────────────────────────────────────────────────
 
 model ConnectedAccount {
-  id                String        @id @default(cuid())
+  id                String   @id @default(cuid())
   workspaceId       String
-  platform          Platform
+  platform          String
   displayName       String
   username          String
   externalAccountId String?
-  authType          String
-  authStatus        AccountStatus @default(PENDING)
-  warmupStatus      WarmupStatus  @default(IDLE)
-  healthStatus      HealthStatus  @default(UNKNOWN)
-  reputationScore   Int           @default(0)
-  riskScore         Int           @default(0)
-  dailyActionLimit  Int           @default(20)
-  assignedProxyId   String?
-  metadata          Json?
-  lastSeenAt        DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  authType          String   @default("cookie")
+  authStatus        String   @default("PENDING")
+  warmupStatus      String   @default("IDLE")
+  healthStatus      String   @default("UNKNOWN")
+  reputationScore   Int      @default(0)
+  riskScore         Int      @default(0)
+  dailyActionLimit  Int      @default(20)
+  assignedProxyId      String?
+  encryptedCredentials String?
+  accessToken          String?
+  refreshToken         String?
+  tokenExpiresAt       DateTime?
+  metadata             String?
+  lastSeenAt           DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   proxy           ProxyProfile?    @relation(fields: [assignedProxyId], references: [id])
@@ -94,37 +137,6 @@ model ConnectedAccount {
   engagements     ThreadEngagement[]
   dmConversations DmConversation[]
   warmupActions   WarmupAction[]
-}
-
-enum Platform {
-  TELEGRAM
-  REDDIT
-  X
-  FACEBOOK
-  LINKEDIN
-}
-
-enum AccountStatus {
-  PENDING
-  CONNECTED
-  DISCONNECTED
-  ERROR
-}
-
-enum WarmupStatus {
-  IDLE
-  WARMING
-  READY
-  PAUSED
-  SUSPENDED
-}
-
-enum HealthStatus {
-  UNKNOWN
-  HEALTHY
-  AT_RISK
-  LIMITED
-  BANNED
 }
 
 model ProxyProfile {
@@ -151,14 +163,14 @@ model ProxyProfile {
 model Source {
   id               String   @id @default(cuid())
   workspaceId      String
-  platform         Platform
+  platform         String
   sourceType       String
   name             String
   externalSourceId String?
   url              String?
   joinStatus       String   @default("pending")
   priority         Int      @default(5)
-  tags             String[]
+  tags             String   @default("[]")
   monitoringMode   String   @default("passive")
   ingestionStatus  String   @default("idle")
   createdAt        DateTime @default(now())
@@ -187,41 +199,41 @@ model ContentItem {
   id                String    @id @default(cuid())
   workspaceId       String
   sourceId          String
-  platform          Platform
+  platform          String
   externalContentId String?
   contentType       String
   authorName        String?
   authorHandle      String?
-  authorMeta        Json?
+  authorMeta        String?
   title             String?
   bodyText          String
   permalink         String?
   postedAt          DateTime?
   ingestedAt        DateTime  @default(now())
   language          String?
-  metadata          Json?
+  metadata          String?
 
   source  Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   signals Signal[]
 }
 
 model Signal {
-  id                String       @id @default(cuid())
+  id                String   @id @default(cuid())
   workspaceId       String
   contentItemId     String
-  signalType        String       @default("intent")
-  intentScore       Int          @default(0)
-  urgencyScore      Int          @default(0)
-  fitScore          Int          @default(0)
-  spamProbability   Float        @default(0)
+  signalType        String   @default("intent")
+  intentScore       Int      @default(0)
+  urgencyScore      Int      @default(0)
+  fitScore          Int      @default(0)
+  spamProbability   Float    @default(0)
   sentiment         String?
-  extractedKeywords String[]
+  extractedKeywords String   @default("[]")
   extractedNeed     String?
   aiSummary         String?
   recommendedAction String?
-  status            SignalStatus @default(NEW)
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  status            String   @default("NEW")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   contentItem ContentItem        @relation(fields: [contentItemId], references: [id])
@@ -229,34 +241,26 @@ model Signal {
   leads       Lead[]
 }
 
-enum SignalStatus {
-  NEW
-  REVIEWED
-  ENGAGED
-  DISMISSED
-  CONVERTED
-}
-
 // ─── Leads ────────────────────────────────────────────────────────────────────
 
 model Lead {
-  id                String        @id @default(cuid())
+  id                String    @id @default(cuid())
   workspaceId       String
-  platform          Platform
+  platform          String
   sourceSignalId    String?
   displayName       String
   handle            String?
   contactChannel    String?
-  leadStatus        String        @default("new")
-  pipelineStage     PipelineStage @default(NEW)
+  leadStatus        String    @default("new")
+  pipelineStage     String    @default("NEW")
   ownerUserId       String?
-  temperature       String        @default("cold")
+  temperature       String    @default("cold")
   estimatedValue    Float?
-  tags              String[]
+  tags              String    @default("[]")
   notes             String?
   lastInteractionAt DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   sourceSignal    Signal?          @relation(fields: [sourceSignalId], references: [id])
@@ -264,71 +268,47 @@ model Lead {
   dmConversations DmConversation[]
 }
 
-enum PipelineStage {
-  NEW
-  CONTACTED
-  REPLIED
-  QUALIFIED
-  NEGOTIATION
-  WON
-  LOST
-}
-
 // ─── Engagement ───────────────────────────────────────────────────────────────
 
 model ThreadEngagement {
-  id           String           @id @default(cuid())
+  id           String    @id @default(cuid())
   workspaceId  String
   signalId     String
   accountId    String
-  platform     Platform
+  platform     String
   replyText    String
-  replyVersion Int              @default(1)
+  replyVersion Int       @default(1)
   tone         String?
-  actionStatus EngagementStatus @default(DRAFT)
+  actionStatus String    @default("DRAFT")
   sentAt       DateTime?
   operatorId   String?
-  aiGenerated  Boolean          @default(false)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
+  aiGenerated  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   signal   Signal           @relation(fields: [signalId], references: [id])
   account  ConnectedAccount @relation(fields: [accountId], references: [id])
   operator User?            @relation(fields: [operatorId], references: [id])
 }
 
-enum EngagementStatus {
-  DRAFT
-  APPROVED
-  SENT
-  FAILED
-  SKIPPED
-}
-
 // ─── DM Conversations ─────────────────────────────────────────────────────────
 
 model DmConversation {
-  id                 String             @id @default(cuid())
+  id                 String    @id @default(cuid())
   workspaceId        String
   leadId             String
   accountId          String
-  platform           Platform
-  conversationStatus ConversationStatus @default(ACTIVE)
+  platform           String
+  conversationStatus String    @default("ACTIVE")
   lastMessageAt      DateTime?
-  unreadCount        Int                @default(0)
+  unreadCount        Int       @default(0)
   summary            String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   lead     Lead             @relation(fields: [leadId], references: [id])
   account  ConnectedAccount @relation(fields: [accountId], references: [id])
   messages DmMessage[]
-}
-
-enum ConversationStatus {
-  ACTIVE
-  ARCHIVED
-  CLOSED
 }
 
 model DmMessage {
@@ -353,11 +333,11 @@ model WarmupPlan {
   workspaceId  String
   accountId    String
   status       String   @default("active")
-  dailyTargets Json?
-  schedule     Json?
+  dailyTargets String?
+  schedule     String?
   tonePreset   String?
-  sourceScope  Json?
-  delayProfile Json?
+  sourceScope  String?
+  delayProfile String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -370,13 +350,13 @@ model WarmupAction {
   id           String    @id @default(cuid())
   warmupPlanId String
   accountId    String
-  platform     Platform
+  platform     String
   actionType   String
   targetRef    String?
   actionStatus String    @default("pending")
   scheduledAt  DateTime?
   executedAt   DateTime?
-  resultMeta   Json?
+  resultMeta   String?
 
   warmupPlan WarmupPlan       @relation(fields: [warmupPlanId], references: [id], onDelete: Cascade)
   account    ConnectedAccount @relation(fields: [accountId], references: [id])
@@ -391,8 +371,8 @@ model AutomationPolicy {
   publicReplyApprovalRequired Boolean  @default(true)
   dmApprovalRequired          Boolean  @default(true)
   riskTolerance               String   @default("low")
-  quietHours                  Json?
-  rateLimits                  Json?
+  quietHours                  String?
+  rateLimits                  String?
   createdAt                   DateTime @default(now())
   updatedAt                   DateTime @updatedAt
 
@@ -409,7 +389,7 @@ model Campaign {
   offerType   String?
   status      String   @default("active")
   toneProfile String?
-  sourceSet   Json?
+  sourceSet   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -426,7 +406,7 @@ model ActivityLog {
   actorId     String?
   entityId    String?
   action      String
-  details     Json?
+  details     String?
   createdAt   DateTime @default(now())
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
